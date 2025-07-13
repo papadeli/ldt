@@ -33,7 +33,8 @@ psychoJS.openWindow({
   backgroundImage: '',
   backgroundFit: 'none',
 });
-// schedule the experiment:
+
+//Schedule the experiment:
 psychoJS.schedule(psychoJS.gui.DlgFromDict({
   dictionary: expInfo,
   title: expName
@@ -43,7 +44,7 @@ const flowScheduler = new Scheduler(psychoJS);
 const dialogCancelScheduler = new Scheduler(psychoJS);
 psychoJS.scheduleCondition(function() { return (psychoJS.gui.dialogComponent.button === 'OK'); },flowScheduler, dialogCancelScheduler);
 
-// flowScheduler gets run if the participants presses OK
+// flowScheduler gets run if the participant presses OK
 flowScheduler.add(updateInfo); // add timeStamp
 flowScheduler.add(experimentInit);
 flowScheduler.add(welcomeRoutineRoutineBegin());
@@ -85,12 +86,12 @@ async function updateInfo() {
   expInfo['OS'] = window.navigator.platform;
 
 
-  // store frame rate of monitor if we can measure it successfully
+  //Store the frame rate of the monitor if we can measure it successfully
   expInfo['frameRate'] = psychoJS.window.getActualFrameRate();
   if (typeof expInfo['frameRate'] !== 'undefined')
     frameDur = 1.0 / Math.round(expInfo['frameRate']);
   else
-    frameDur = 1.0 / 60.0; // couldn't get a reliable measure so guess
+    frameDur = 1.0 / 60.0; // couldn't get a reliable measure, so guess
 
   // add info from the URL:
   util.addInfoFromUrl(expInfo);
@@ -163,7 +164,7 @@ async function experimentInit() {
   });
   
   // Create some handy timers
-  globalClock = new util.Clock();  // to track the time since experiment started
+  globalClock = new util.Clock();  // to track the time since the experiment started
   routineTimer = new util.CountdownTimer();  // to track time remaining of each (non-slip) routine
   
   return Scheduler.Event.NEXT;
@@ -244,7 +245,7 @@ function welcomeRoutineRoutineEachFrame() {
         startKeyboard.keys = _startKeyboard_allKeys[_startKeyboard_allKeys.length - 1].name;  // just the last key pressed
         startKeyboard.rt = _startKeyboard_allKeys[_startKeyboard_allKeys.length - 1].rt;
         startKeyboard.duration = _startKeyboard_allKeys[_startKeyboard_allKeys.length - 1].duration;
-        // a response ends the routine
+        //A response ends the routine
         continueRoutine = false;
       }
     }
@@ -297,7 +298,7 @@ function welcomeRoutineRoutineEnd(snapshot) {
         }
     
     startKeyboard.stop();
-    // the Routine "welcomeRoutine" was not non-slip safe, so reset the non-slip timer
+    //The routine "welcomeRoutine" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset();
     
     // Routines running outside a loop should always advance the datafile row
@@ -312,9 +313,9 @@ function welcomeRoutineRoutineEnd(snapshot) {
 var conditionLoop;
 function conditionLoopLoopBegin(conditionLoopLoopScheduler, snapshot) {
   return async function() {
-    TrialHandler.fromSnapshot(snapshot); // update internal variables (.thisN etc) of the loop
+    TrialHandler.fromSnapshot(snapshot); // update internal variables (.thisN, etc) of the loop
     
-    // set up handler to look after randomisation of conditions etc
+    // set up handler to look after randomisation of conditions, etc
     conditionLoop = new TrialHandler({
       psychoJS: psychoJS,
       nReps: 1, method: TrialHandler.Method.RANDOM,
@@ -444,13 +445,13 @@ function conditionRoutineRoutineEachFrame() {
         responseKeyboard.keys = _responseKeyboard_allKeys[_responseKeyboard_allKeys.length - 1].name;  // just the last key pressed
         responseKeyboard.rt = _responseKeyboard_allKeys[_responseKeyboard_allKeys.length - 1].rt;
         responseKeyboard.duration = _responseKeyboard_allKeys[_responseKeyboard_allKeys.length - 1].duration;
-        // was this correct?
+        //Was this correct?
         if (responseKeyboard.keys == answer) {
             responseKeyboard.corr = 1;
         } else {
             responseKeyboard.corr = 0;
         }
-        // a response ends the routine
+        //A response ends the routine
         continueRoutine = false;
       }
     }
@@ -499,7 +500,7 @@ function conditionRoutineRoutineEnd(snapshot) {
          responseKeyboard.corr = 0;  // failed to respond (incorrectly)
       }
     }
-    // store data for current loop
+    // store data for the current loop
     // update the trial handler
     if (currentLoop instanceof MultiStairHandler) {
       currentLoop.addResponse(responseKeyboard.corr, level);
@@ -513,7 +514,7 @@ function conditionRoutineRoutineEnd(snapshot) {
         }
     
     responseKeyboard.stop();
-    // the Routine "conditionRoutine" was not non-slip safe, so reset the non-slip timer
+    //The Routine "conditionRoutine" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset();
     
     // Routines running outside a loop should always advance the datafile row
@@ -540,11 +541,24 @@ function exitRoutineRoutineBegin(snapshot) {
     routineTimer.reset();
     exitRoutineMaxDurationReached = false;
     // update component parameters for each repeat
-    // Disable downloading results to browser
+    // Disable downloading results to the browser
     psychoJS.__saveResults = 0;
     
-    // Generate filename for results
-    let filename = psychoJS.__experiment.__experimentName + '_' + psychoJS.__experiment.__datetime + '.csv';
+    // Generate a filename for results
+    // let filename = psychoJS.__experiment.__experimentName + '_' + psychoJS.__experiment.__datetime + '.csv';
+
+    psychoJS.schedule(() => {
+    // Prepare the CSV content
+    const headers = ['stimulus', 'is_word', 'response', 'RT'];
+    const csvContent = [
+        headers.join(','),
+        ...results.map(item => headers.map(header => item[header]).join(','))
+    ].join('\n');
+    
+    // Create a filename with timestamp
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}${now.getSeconds().toString().padStart(2,'0')}`;
+    const filename = `LexicalDecision_${timestamp}.csv`;
     
     // Extract data object from experiment
     let dataObj = psychoJS.__experiment.__trialsData;
@@ -553,30 +567,45 @@ function exitRoutineRoutineBegin(snapshot) {
     let data = [Object.keys(dataObj[0])].concat(dataObj).map(it => {
         return Object.values(it).toString();
     }).join('\n');
-    
-    // Send data to OSF via DataPipe
-    console.log('Saving data...');
+       
+    // First try saving to OSF via DataPipe
+    console.log('Attempting to save data to OSF...');
     fetch('https://pipe.jspsych.org/api/data', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Accept': '*/*'
+            'Accept': 'application/json'
         },
         body: JSON.stringify({
             experimentID: '00DqBG2303Lm', // * UPDATE WITH YOUR DATAPIPE EXPERIMENT ID *
             filename: filename,
-            data: data
+            data: csvContent
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error('OSF upload failed');
+        return response.json();
+    })
     .then(data => {
-        // Log response and force experiment end
-        console.log(data);
-        quitPsychoJS();
+        console.log('OSF save successful:', data);
+        return Scheduler.Event.NEXT;
     })
     .catch(error => {
-        console.error('Error:', error);
-    });
+        console.warn('OSF save failed, falling back to local download:', error);
+        
+        // Local download fallback
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        return Scheduler.Event.NEXT;
+    })
     psychoJS.experiment.addData('exitRoutine.started', globalClock.getTime());
     exitRoutineMaxDuration = null
     // keep track of which components have finished
